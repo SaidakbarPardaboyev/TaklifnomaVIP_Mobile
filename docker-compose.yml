@@ -1,0 +1,18 @@
+services:
+  backend:
+    container_name: taklifnomavip_mobile
+    build:
+      context: .
+      dockerfile: Dockerfile
+    pull_policy: always  # 🔹 Ensures the latest image is always used
+    ports:
+      - "8081:8081"
+    environment:
+      - HTTP_PORT=8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/healthcheck"]
+      interval: 40s
+      timeout: 30s
+      retries: 3
+      start_period: 10s
+    restart: on-failure
