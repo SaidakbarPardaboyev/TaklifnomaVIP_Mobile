@@ -1,5 +1,5 @@
 services:
-  backend:
+  mobile:
     container_name: taklifnomavip_mobile
     build:
       context: .
