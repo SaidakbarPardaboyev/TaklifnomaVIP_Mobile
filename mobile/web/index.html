@@ -20,7 +20,22 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Unutilmas lahzalarda-unutilmas takliflar yarating💍">
+  <meta name="keywords" content="to'y, taklifnoma, wedding, invite">
+  <meta name="author" content="TaklifnomaVIP">
+  <!-- <meta property="og:title" content="TaklifnomaVIP">
+  <meta property="og:description" content="Unutilmas lahzalarda-unutilmas takliflar yarating💍">
+  <meta property="og:image"
+    content="https://lh3.googleusercontent.com/bSkaL8eyM2oSKUqBaGjenUmwev5-C4phS5WRfzBNMUgOKxGOtG_4BTI_pfhRpjjx1y8ajvZ_8KIhlsIW1kobxRJsXHRqZ__PkDgbMA=w1200-h800-l90-e30">
+  <meta property="og:url" content="https://wedding-uz.web.app/"> -->
+
+  <meta property="og:title" content="TaklifnomaVIP">
+  <meta property="og:description" content="Unutilmas lahzalarda-unutilmas takliflar yarating💍">
+  <meta property="og:image"
+    content="https://lh3.googleusercontent.com/bSkaL8eyM2oSKUqBaGjenUmwev5-C4phS5WRfzBNMUgOKxGOtG_4BTI_pfhRpjjx1y8ajvZ_8KIhlsIW1kobxRJsXHRqZ__PkDgbMA=w1200-h800-l90-e30">
+  <meta property="og:url" content="https://wedding-uz.web.app/">
+
+  <title>TaklifnomaVIP</title>
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
   <!-- iOS meta tags & icons -->
@@ -30,17 +45,27 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/png" href="favicon.png" />s
 
   <title>wedding_day_invite</title>
   <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
+  <div id="splash-screen"
+    style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background-color: white; z-index: 9999;">
+    <h2 style="font-family: sans-serif; color: #4CAF50;">Iltimos kuting...</h2>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('splash-screen');
+      if (splash) splash.remove();
+    });
+  </script>
 </body>
 
-<!-- <script type="module">
+<script type="module">
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
@@ -62,6 +87,6 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
-</script> -->
+</script>
 
 </html>
