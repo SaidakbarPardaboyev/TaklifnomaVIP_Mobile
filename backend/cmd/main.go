@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"taklifnomavip_mobile/backend/config"
 	"taklifnomavip_mobile/backend/pkg/logger"
@@ -10,17 +12,32 @@ import (
 
 func main() {
 	cfg := config.Load()
-
 	log := logger.New(cfg.LogLevel, "taklifnomavip/")
 
-	// Serve static files from the current directory
-	fs := http.FileServer(http.Dir("./mobile/web"))
+	webDir := "./mobile/web"
 
-	http.Handle("/", fs)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(webDir, r.URL.Path)
+
+		if _, err := os.Stat(path); err == nil && !isDir(path) {
+			http.ServeFile(w, r, path)
+			return
+		}
+
+		http.ServeFile(w, r, filepath.Join(webDir, "index.html"))
+	})
 
 	fmt.Println("Server started at http://" + cfg.HttpHost + ":" + cfg.HttpPort)
 	err := http.ListenAndServe(cfg.HttpHost+":"+cfg.HttpPort, nil)
 	if err != nil {
-		log.Error(fmt.Sprintf("Error on server start %v\n", err))
+		log.Error(fmt.Sprintf("Error on server start: %v", err))
 	}
+}
+
+func isDir(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fi.IsDir()
 }
