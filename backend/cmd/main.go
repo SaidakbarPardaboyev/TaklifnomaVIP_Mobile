@@ -6,8 +6,9 @@ import (
 	"io/fs"
 	"net/http"
 	"path"
+	"os"
 
-	// "taklifnomavip_mobile/backend/config"
+	"github.com/joho/godotenv"
 	"taklifnomavip_mobile/backend/pkg/logger"
 )
 
@@ -24,8 +25,15 @@ import (
 var embeddedFS embed.FS
 
 func main() {
-	// cfg := config.Load()
-	log := logger.New("fatal", "taklifnomavip/")
+	// Load variables from .env file (ignore error if file is absent)
+	_ = godotenv.Load()
+
+	// Read runtime configuration from environment (populated via .env if present)
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	log := logger.New(logLevel, "taklifnomavip/")
 
 	web, err := fs.Sub(embeddedFS, "web")
 	if err != nil {
@@ -43,7 +51,12 @@ func main() {
 	fileServer := http.FileServer(http.FS(web))
 	mux.Handle("/", spaHandler(fileServer))
 
-	addr := ":" + "8081"
+	port := os.Getenv("HTTP_PORT")
+	if port == "" {
+		port = "8081"
+	}
+	host := os.Getenv("HTTP_HOST") // empty = all interfaces
+	addr := host + ":" + port
 	log.Info("Server started at http://" + addr)
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
