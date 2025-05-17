@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"path"
 
-	"taklifnomavip_mobile/backend/config"
+	// "taklifnomavip_mobile/backend/config"
 	"taklifnomavip_mobile/backend/pkg/logger"
 )
 
@@ -16,19 +16,18 @@ import (
  | 1.  build → mobile/web  (../../ hisoblanadi, chunki
  |     main.go   ↩︎  backend/cmd/
  |--------------------------------------------------------------
+ |  embeddedFS’ning ichida "web" katalogi paydo bo‘ldi.
+ |  fs.Sub() ga endi **faqat shu nomni** beramiz
+ |--------------------------------------------------------------
 */
 //go:embed all:web
 var embeddedFS embed.FS
 
 func main() {
-	cfg := config.Load()
-	log := logger.New(cfg.LogLevel, "taklifnomavip/")
+	// cfg := config.Load()
+	log := logger.New("fatal", "taklifnomavip/")
 
-	/*
-	 |  embeddedFS’ning ichida "mobile/web" katalogi paydo bo‘ldi.
-	 |  fs.Sub() ga endi **faqat shu nomni** beramiz
-	*/
-	web, err := fs.Sub(embeddedFS, "mobile/web")
+	web, err := fs.Sub(embeddedFS, "web")
 	if err != nil {
 		log.Fatal(fmt.Sprintf("embed FS xatosi: %v", err))
 	}
@@ -44,7 +43,7 @@ func main() {
 	fileServer := http.FileServer(http.FS(web))
 	mux.Handle("/", spaHandler(fileServer))
 
-	addr := cfg.HttpHost + ":" + cfg.HttpPort
+	addr := ":" + "8081"
 	log.Info("Server started at http://" + addr)
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
@@ -59,13 +58,21 @@ func spaHandler(next http.Handler) http.HandlerFunc {
 			return
 		}
 
-		// Fayl bor-yo‘qligini tekshiramiz (mobile/web/…)
-		if _, err := fs.Stat(embeddedFS, path.Join("mobile/web", r.URL.Path)); err == nil {
+		requestedPath := path.Join("web", r.URL.Path)
+
+		// 1️⃣ Agar fayl mavjud bo‘lsa, bevosita xizmat qilamiz
+		if _, err := fs.Stat(embeddedFS, requestedPath); err == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// SPA fallback
+		// 2️⃣ Faqat .html bo‘lgan URL uchun 404 qaytaramiz (fallback emas)
+		if path.Ext(r.URL.Path) == ".html" {
+			http.NotFound(w, r)
+			return
+		}
+
+		// 3️⃣ Fallback to index.html
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
