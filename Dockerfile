@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS builder
+FROM golang:1.21-alpine AS builder
 
 # Install necessary dependencies for building the application and Cgo support
 RUN apk update && apk add --no-cache \
@@ -25,6 +25,9 @@ FROM alpine
 
 # Copy the built Go binary from the builder stage
 COPY --from=builder /taklifnomavip_mobile .
+
+# Copy the Flutter web build files
+COPY ./mobile/web /mobile/web
 
 # Copy the config directory from the builder stage to the final image
 COPY --from=builder /go/src/github.com/SaidakbarPardaboyev/TaklifnomaVIP_Mobile/backend/config /config
