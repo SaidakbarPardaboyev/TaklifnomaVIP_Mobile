@@ -1,77 +1,76 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
+	"path"
 
 	"taklifnomavip_mobile/backend/config"
 	"taklifnomavip_mobile/backend/pkg/logger"
 )
 
+/*
+ |--------------------------------------------------------------
+ | 1.  build → mobile/web  (../../ hisoblanadi, chunki
+ |     main.go   ↩︎  backend/cmd/
+ |--------------------------------------------------------------
+*/
+//go:embed all:web
+var embeddedFS embed.FS
+
 func main() {
 	cfg := config.Load()
 	log := logger.New(cfg.LogLevel, "taklifnomavip/")
 
-	webDir := "/mobile/web"
+	/*
+	 |  embeddedFS’ning ichida "mobile/web" katalogi paydo bo‘ldi.
+	 |  fs.Sub() ga endi **faqat shu nomni** beramiz
+	*/
+	web, err := fs.Sub(embeddedFS, "mobile/web")
+	if err != nil {
+		log.Fatal(fmt.Sprintf("embed FS xatosi: %v", err))
+	}
 
-	// Add health check endpoint
-	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	mux := http.NewServeMux()
+
+	// Healthcheck
+	mux.HandleFunc("/healthcheck", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
-	// Create file server handler
-	fs := http.FileServer(http.Dir(webDir))
+	// Statik fayllar + SPA fallback
+	fileServer := http.FileServer(http.FS(web))
+	mux.Handle("/", spaHandler(fileServer))
 
-	// Main handler for all routes
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Log incoming requests
-		log.Info(fmt.Sprintf("Request: %s %s", r.Method, r.URL.Path))
+	addr := cfg.HttpHost + ":" + cfg.HttpPort
+	log.Info("Server started at http://" + addr)
 
-		// Handle static files first
-		if strings.HasPrefix(r.URL.Path, "/assets/") ||
-			strings.HasPrefix(r.URL.Path, "/icons/") ||
-			strings.HasSuffix(r.URL.Path, ".js") ||
-			strings.HasSuffix(r.URL.Path, ".json") ||
-			strings.HasSuffix(r.URL.Path, ".png") ||
-			strings.HasSuffix(r.URL.Path, ".ico") ||
-			strings.HasSuffix(r.URL.Path, ".css") {
-			fs.ServeHTTP(w, r)
+	if err := http.ListenAndServe(addr, mux); err != nil {
+		log.Error(fmt.Sprintf("ListenAndServe xatosi: %v", err))
+	}
+}
+
+func spaHandler(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		// For all other routes, serve index.html
-		indexFile := filepath.Join(webDir, "index.html")
-		if _, err := os.Stat(indexFile); err != nil {
-			log.Error(fmt.Sprintf("index.html not found at %s: %v", indexFile, err))
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		// Fayl bor-yo‘qligini tekshiramiz (mobile/web/…)
+		if _, err := fs.Stat(embeddedFS, path.Join("mobile/web", r.URL.Path)); err == nil {
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		// Set headers for no caching
+		// SPA fallback
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 
-		http.ServeFile(w, r, indexFile)
-	})
-
-	serverAddr := cfg.HttpHost + ":" + cfg.HttpPort
-	fmt.Printf("Server started at http://%s\n", serverAddr)
-
-	if err := http.ListenAndServe(serverAddr, nil); err != nil {
-		log.Error(fmt.Sprintf("Error on server start: %v", err))
-		os.Exit(1)
+		r.URL.Path = "/index.html"
+		next.ServeHTTP(w, r)
 	}
-}
-
-func isDir(path string) bool {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return fi.IsDir()
 }
