@@ -27,7 +27,7 @@ FROM alpine
 COPY --from=builder /taklifnomavip_mobile .
 
 # Copy the Flutter web build files
-COPY ./mobile/web /mobile/web
+COPY ./backend/cmd/web /mobile/web
 
 # Copy the config directory from the builder stage to the final image
 COPY --from=builder /go/src/github.com/SaidakbarPardaboyev/TaklifnomaVIP_Mobile/backend/config /config
