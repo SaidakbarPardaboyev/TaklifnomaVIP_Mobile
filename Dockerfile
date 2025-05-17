@@ -1,4 +1,4 @@
-FROM golang:1.22.2-alpine AS gobuilder
+FROM golang:1.22.2-alpine AS builder
 
 # Install necessary dependencies for building the application and Cgo support
 RUN apk update && apk add --no-cache \
